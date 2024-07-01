@@ -1,0 +1,9 @@
+{
+  "jsc": {
+    "parser": { "syntax": "typescript" },
+    "baseUrl": "./",
+    "paths": {
+      "*": ["node_modules", "src/*"]
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "devDependencies": {
+    "@swc/cli": "^0.3.14",
+    "@swc/core": "^1.6.5",
+    "swc-loader": "^0.2.6",
+    "webpack": "^5.92.1"
+  },
+  "scripts": {
+    "build": "npx tsc",
+    "test": "node .\\src\\connect4.js"
+  },
+  "dependencies": {
+    "fs": "^0.0.1-security",
+    "undici-types": "^6.19.2"
+  }
+}
