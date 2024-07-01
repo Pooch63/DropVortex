@@ -105,11 +105,11 @@ export class Board {
     return board;
   }
 
-  set_player_turn(player: PLAYER) {
-    this.board |= BigInt(player) << 43n;
-  }
   set_ind(player: PLAYER, ind: bigint, column: number) {
+    //Only do the work of creating a BigInt if we need to update a bit: if it's one
+    // if (player == 1) this.board |= 1n << ind;
     this.board |= BigInt(player) << ind;
+
     this.set_positions |= 1n << ind;
 
     //Augment the index of the available move on this column so that it goes up by 1 row
@@ -146,6 +146,7 @@ export class Board {
 
   full_board_state(): bigint {
     return this.board | (this.set_positions << 43n);
+    // return this.board.toString() + this.set_positions.toString();
   }
   set_board_state(state: bigint) {
     this.board = state & ((1n << 43n) - 1n);

@@ -12,6 +12,11 @@ import {
 
 import * as log from "./log";
 
+let a = 0,
+  b = 0,
+  c = 0,
+  d: number = 0;
+
 let positions = 0;
 const MAX_CACHE_SIZE = 10000;
 export class Game {
@@ -24,9 +29,8 @@ export class Game {
     }
   > = {};
 
-  constructor(first_player: PLAYER = RED) {
+  constructor() {
     this.board = new Board();
-    this.board.set_player_turn(first_player);
   }
 
   //Positive score if position is better for red.
@@ -50,8 +54,6 @@ export class Game {
     alpha: number = Number.NEGATIVE_INFINITY,
     beta: number = Number.POSITIVE_INFINITY
   ): number {
-    position.set_player_turn(player);
-
     let color = player == RED ? 1 : -1;
     if (depth <= 0) return color * this.eval(position);
 
@@ -61,11 +63,18 @@ export class Game {
     for (let col = 0; col < this.board.avail_moves.length; col += 1) {
       let move = position.avail_moves[col];
       if (move == INVALID_MOVE) continue;
+      // let m = performance.now();
       let next_board = position.duplicate();
       next_board.set_chip(player, move as row, col as column);
+      // d += performance.now() - m;
 
       let negamax_eval: number;
-      let position_ind = next_board.full_board_state().toString(2);
+      // let z = performance.now();
+      //Convert board state to string, makes inserting into object way faster
+      // let position_ind = next_board.full_board_state().toString();
+      let position_ind = next_board.full_board_state().toString();
+
+      // a += performance.now() - z;
 
       // log.writeln(`Depth = ${depth}, Evaluating Pos ${position_ind}`);
       // console.log(position_ind, this.position_cache[position_ind]?.depth);
@@ -113,4 +122,10 @@ game.board.log_board();
 console.time();
 let eval_ = game.negamax(14, BLUE);
 console.timeEnd();
-console.log(eval_, positions, Reflect.ownKeys(game.position_cache).length);
+console.log(
+  eval_,
+  positions,
+  Reflect.ownKeys(game.position_cache).length,
+  a,
+  d
+);

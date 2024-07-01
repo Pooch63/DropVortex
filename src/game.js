@@ -2,13 +2,13 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Game = void 0;
 const board_1 = require("./board");
+let a = 0, b = 0, c = 0, d = 0;
 let positions = 0;
 const MAX_CACHE_SIZE = 10000;
 class Game {
-    constructor(first_player = board_1.RED) {
+    constructor() {
         this.position_cache = {};
         this.board = new board_1.Board();
-        this.board.set_player_turn(first_player);
     }
     //Positive score if position is better for red.
     //Negative score if position is better for blue.
@@ -22,19 +22,9 @@ class Game {
         positions += 1;
         return 0;
         return Math.random();
-        positions += 1;
-        let total = 0;
-        for (let ind = 0n; ind < BigInt(7); ind += 1n) {
-            if (position.set_at_ind(ind)) {
-                let player = position.piece_at_ind(ind);
-                total += player == 1 ? 1 : -1;
-            }
-        }
-        return total;
     }
     //Negamax algorithm
     negamax(depth, player, position = this.board, alpha = Number.NEGATIVE_INFINITY, beta = Number.POSITIVE_INFINITY) {
-        position.set_player_turn(player);
         let color = player == board_1.RED ? 1 : -1;
         if (depth <= 0)
             return color * this.eval(position);
@@ -44,10 +34,16 @@ class Game {
             let move = position.avail_moves[col];
             if (move == board_1.INVALID_MOVE)
                 continue;
+            // let m = performance.now();
             let next_board = position.duplicate();
             next_board.set_chip(player, move, col);
+            // d += performance.now() - m;
             let negamax_eval;
-            let position_ind = next_board.full_board_state().toString(2);
+            // let z = performance.now();
+            //Convert board state to string, makes inserting into object way faster
+            // let position_ind = next_board.full_board_state().toString();
+            let position_ind = next_board.full_board_state().toString();
+            // a += performance.now() - z;
             // log.writeln(`Depth = ${depth}, Evaluating Pos ${position_ind}`);
             // console.log(position_ind, this.position_cache[position_ind]?.depth);
             if (this.position_cache[position_ind]?.depth >= depth) {
@@ -86,21 +82,4 @@ game.board.log_board();
 console.time();
 let eval_ = game.negamax(14, board_1.BLUE);
 console.timeEnd();
-console.log(eval_, positions, Reflect.ownKeys(game.position_cache).length);
-let board = new board_1.Board();
-function log_(depth = 2, b = board, player = board_1.RED) {
-    if (depth == 0)
-        return;
-    let moves = b.avail_moves;
-    for (let col = 0; col < board_1.COL_COUNT; col += 1) {
-        let move = moves[col];
-        if (move == board_1.INVALID_MOVE)
-            continue;
-        let duplicate = b.duplicate();
-        duplicate.set_chip(player, move, col);
-        console.log(move, col);
-        console.log(`${depth}:\n${duplicate.board_str()}\n`);
-        log_(depth - 1, duplicate, player == board_1.RED ? board_1.BLUE : board_1.RED);
-    }
-}
-// log_();
+console.log(eval_, positions, Reflect.ownKeys(game.position_cache).length, a, d);
