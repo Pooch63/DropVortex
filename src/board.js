@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Board = exports.INVALID_MOVE = exports.COL_COUNT = exports.ROW_COUNT = exports.BLUE = exports.RED = void 0;
+exports.Board = exports.INVALID_MOVE = exports.COL_COUNT = exports.ROW_COUNT = exports.NO_PLAYER = exports.BLUE = exports.RED = void 0;
 /** DEBUG */
 function log_board(board) {
     let output = "";
@@ -12,7 +12,7 @@ function log_board(board) {
     }
     console.log(output);
 }
-exports.RED = 0 /* PLAYER.RED */, exports.BLUE = 1 /* PLAYER.BLUE */;
+exports.RED = 0 /* PLAYER.RED */, exports.BLUE = 1 /* PLAYER.BLUE */, exports.NO_PLAYER = 2 /* PLAYER.NO_PLAYER */;
 /** NOTE: if you update these values, you will also need to update the lane bitboard gen code.*/
 exports.ROW_COUNT = 6, exports.COL_COUNT = 7;
 const WIN_LENGTH = 4;
@@ -20,10 +20,13 @@ const WIN_LENGTH = 4;
 //on the lane bitboard is of the same player, that player wins
 const lane_bitboards = [];
 //Get row lanes
-let rows_bits = 0b1111;
+let rows_bits = BigInt(0b1111);
 for (let row = 0; row < exports.ROW_COUNT; row += 1) {
+    // for (let row = 5n; row != 6n; row += 1n) {
     for (let col = 0; col <= exports.COL_COUNT - WIN_LENGTH; col += 1) {
-        lane_bitboards.push(BigInt(rows_bits << (col + row * exports.COL_COUNT)));
+        // for (let col = 0n; col != 3n; col += 1n) {
+        lane_bitboards.push(rows_bits << BigInt(col + row * exports.COL_COUNT));
+        log_board(rows_bits << BigInt(col + row * exports.COL_COUNT));
     }
 }
 //Get column lanes
@@ -151,3 +154,22 @@ class Board {
     }
 }
 exports.Board = Board;
+let b = new Board();
+b.set_chip(exports.RED, 0, 0);
+b.set_chip(exports.RED, 1, 0);
+b.set_chip(exports.RED, 2, 0);
+b.set_chip(exports.BLUE, 3, 0);
+b.set_chip(exports.RED, 4, 0);
+b.set_chip(exports.RED, 5, 0);
+b.set_chip(exports.BLUE, 0, 1);
+b.set_chip(exports.RED, 1, 1);
+b.set_chip(exports.BLUE, 0, 3);
+b.set_chip(exports.BLUE, 1, 3);
+b.set_chip(exports.BLUE, 2, 3);
+b.set_chip(exports.RED, 3, 3);
+b.set_chip(exports.BLUE, 4, 3);
+b.set_chip(exports.BLUE, 5, 3);
+b.set_chip(exports.BLUE, 0, 4);
+b.set_chip(exports.RED, 0, 5);
+b.set_chip(exports.RED, 0, 6);
+console.log(b.log_board(), b.win());

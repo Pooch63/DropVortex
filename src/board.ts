@@ -16,7 +16,8 @@ export const enum PLAYER {
   NO_PLAYER = 2,
 }
 export const RED = PLAYER.RED,
-  BLUE = PLAYER.BLUE;
+  BLUE = PLAYER.BLUE,
+  NO_PLAYER = PLAYER.NO_PLAYER;
 
 /** NOTE: if you update these values, you will also need to update the lane bitboard gen code.*/
 export const ROW_COUNT = 6,
@@ -30,10 +31,11 @@ export type column = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 const lane_bitboards: bigint[] = [];
 
 //Get row lanes
-let rows_bits = 0b1111;
+let rows_bits = BigInt(0b1111);
+
 for (let row = 0; row < ROW_COUNT; row += 1) {
   for (let col = 0; col <= COL_COUNT - WIN_LENGTH; col += 1) {
-    lane_bitboards.push(BigInt(rows_bits << (col + row * COL_COUNT)));
+    lane_bitboards.push(rows_bits << BigInt(col + row * COL_COUNT));
   }
 }
 //Get column lanes
@@ -173,3 +175,29 @@ export class Board {
     console.log(this.board_str());
   }
 }
+
+let b = new Board();
+b.set_chip(RED, 0, 0);
+b.set_chip(RED, 1, 0);
+b.set_chip(RED, 2, 0);
+b.set_chip(BLUE, 3, 0);
+b.set_chip(RED, 4, 0);
+b.set_chip(RED, 5, 0);
+
+b.set_chip(BLUE, 0, 1);
+b.set_chip(RED, 1, 1);
+
+b.set_chip(BLUE, 0, 3);
+b.set_chip(BLUE, 1, 3);
+b.set_chip(BLUE, 2, 3);
+b.set_chip(RED, 3, 3);
+b.set_chip(BLUE, 4, 3);
+b.set_chip(BLUE, 5, 3);
+
+b.set_chip(BLUE, 0, 4);
+
+b.set_chip(RED, 0, 5);
+
+b.set_chip(RED, 0, 6);
+
+console.log(b.log_board(), b.win());
