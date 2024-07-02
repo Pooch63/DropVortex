@@ -20,6 +20,12 @@ let a = 0,
 
 let positions = 0;
 const MAX_CACHE_SIZE = 10000;
+
+const evalTable = [
+  3, 4, 5, 7, 5, 4, 3, 4, 6, 8, 10, 8, 6, 4, 5, 8, 11, 13, 11, 8, 5, 5, 8, 11,
+  13, 11, 8, 5, 4, 6, 8, 10, 8, 6, 4, 3, 4, 5, 7, 5, 4, 3,
+];
+
 export class Game {
   public board: Board;
   public position_cache: Record<
@@ -46,7 +52,14 @@ export class Game {
     if (win == BLUE) return -1_000_000_000 + depth;
 
     positions += 1;
-    return 0;
+
+    let score = 0;
+    for (let i = 0; i < COL_COUNT * ROW_COUNT; i += 1) {
+      let piece = position.piece_at_ind(BigInt(i));
+      if (piece == BLUE) score -= evalTable[i];
+      else if (piece == RED) score += evalTable[i];
+    }
+    return score;
     return Math.random();
   }
 

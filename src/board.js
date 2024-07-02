@@ -22,11 +22,8 @@ const lane_bitboards = [];
 //Get row lanes
 let rows_bits = BigInt(0b1111);
 for (let row = 0; row < exports.ROW_COUNT; row += 1) {
-    // for (let row = 5n; row != 6n; row += 1n) {
     for (let col = 0; col <= exports.COL_COUNT - WIN_LENGTH; col += 1) {
-        // for (let col = 0n; col != 3n; col += 1n) {
         lane_bitboards.push(rows_bits << BigInt(col + row * exports.COL_COUNT));
-        log_board(rows_bits << BigInt(col + row * exports.COL_COUNT));
     }
 }
 //Get column lanes

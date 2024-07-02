@@ -23,7 +23,7 @@ while (game.board.win() == board_1.NO_PLAYER) {
         break;
     }
     if (turn == Turn.BOT) {
-        let best = game.bestMove(7);
+        let best = game.bestMove(9);
         game.board.set_chip(board_1.RED, best.row, best.col);
     }
     else {

@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "npx tsc",
-    "test": "node .\\src\\board.js"
+    "test": "node .\\src\\cli.js"
   },
   "dependencies": {
     "fs": "^0.0.1-security",
