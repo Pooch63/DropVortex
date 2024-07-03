@@ -1,3 +1,5 @@
+import colors from "colors/safe";
+
 /** DEBUG */
 function log_board(board: bigint) {
   let output = "";
@@ -67,9 +69,13 @@ for (let row = ROW_COUNT - 1; row >= WIN_LENGTH - 1; row -= 1) {
 }
 
 //SHOULD BE 86 for a 7x6 board with a win length of 4
-console.log(lane_bitboards.length);
+// console.log(lane_bitboards.length);
 
 export const INVALID_MOVE = -1;
+const evalTable = [
+  3, 4, 5, 7, 5, 4, 3, 4, 6, 8, 10, 8, 6, 4, 5, 8, 11, 13, 11, 8, 5, 5, 8, 11,
+  13, 11, 8, 5, 4, 6, 8, 10, 8, 6, 4, 3, 4, 5, 7, 5, 4, 3,
+];
 
 function clone1DArr<type>(arr: type[]) {
   let new_: type[] = [];
@@ -79,6 +85,10 @@ function clone1DArr<type>(arr: type[]) {
 
 //43rd bit in the representation shows whose turn it is to go
 export class Board {
+  //Properties to quicken board evaluation
+  //One of the things eval takes into consideration is where the pieces are placed.
+  public piece_eval: number = 0;
+
   //Bit in board is set to 0 if red, 1 if blue.
   //However, empty cells will also be 0. To account for this, we also have
   //a bitboard of all positions that have already been filled
@@ -104,6 +114,7 @@ export class Board {
     board.board = this.board;
     board.set_positions = this.set_positions;
     board.avail_moves = clone1DArr<row | -1>(this.avail_moves);
+    board.piece_eval = this.piece_eval;
     return board;
   }
 
@@ -120,6 +131,9 @@ export class Board {
     if (this.avail_moves[column] >= ROW_COUNT) {
       this.avail_moves[column] = INVALID_MOVE;
     }
+
+    // console.log(ind, column, evalTable[Number(ind)], player);
+    this.piece_eval += evalTable[Number(ind)] * (player == PLAYER.RED ? 1 : -1);
   }
   set_chip(player: PLAYER, row: row, column: column) {
     let ind = BigInt(column + row * COL_COUNT);
@@ -154,50 +168,33 @@ export class Board {
     this.board = state & ((1n << 43n) - 1n);
     this.set_positions = state >> 43n;
   }
-  board_str() {
+  board_str(red = "0", blue = "1", pipe = "|") {
     let output = "";
     for (let row = 0; row < 6; row += 1) {
       for (let col = 0; col < 7; col += 1) {
         let set_bit = 1n << BigInt(col + (5 - row) * 7);
         output +=
-          "|" +
+          pipe +
           (this.set_positions & set_bit
             ? (this.board & set_bit) == 0n
-              ? "0"
-              : "1"
+              ? red
+              : blue
             : " ");
       }
-      output += "|\n";
+      output += pipe + "\n";
     }
     return output;
   }
   log_board() {
     console.log(this.board_str());
   }
+  log_board_color() {
+    console.log(
+      this.board_str(
+        colors.red("\u2022"),
+        colors.blue("\u2022"),
+        colors.yellow("|")
+      )
+    );
+  }
 }
-
-let b = new Board();
-b.set_chip(RED, 0, 0);
-b.set_chip(RED, 1, 0);
-b.set_chip(RED, 2, 0);
-b.set_chip(BLUE, 3, 0);
-b.set_chip(RED, 4, 0);
-b.set_chip(RED, 5, 0);
-
-b.set_chip(BLUE, 0, 1);
-b.set_chip(RED, 1, 1);
-
-b.set_chip(BLUE, 0, 3);
-b.set_chip(BLUE, 1, 3);
-b.set_chip(BLUE, 2, 3);
-b.set_chip(RED, 3, 3);
-b.set_chip(BLUE, 4, 3);
-b.set_chip(BLUE, 5, 3);
-
-b.set_chip(BLUE, 0, 4);
-
-b.set_chip(RED, 0, 5);
-
-b.set_chip(RED, 0, 6);
-
-console.log(b.log_board(), b.win());

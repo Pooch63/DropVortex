@@ -1,6 +1,10 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Board = exports.INVALID_MOVE = exports.COL_COUNT = exports.ROW_COUNT = exports.NO_PLAYER = exports.BLUE = exports.RED = void 0;
+const safe_1 = __importDefault(require("colors/safe"));
 /** DEBUG */
 function log_board(board) {
     let output = "";
@@ -50,8 +54,12 @@ for (let row = exports.ROW_COUNT - 1; row >= WIN_LENGTH - 1; row -= 1) {
     }
 }
 //SHOULD BE 86 for a 7x6 board with a win length of 4
-console.log(lane_bitboards.length);
+// console.log(lane_bitboards.length);
 exports.INVALID_MOVE = -1;
+const evalTable = [
+    3, 4, 5, 7, 5, 4, 3, 4, 6, 8, 10, 8, 6, 4, 5, 8, 11, 13, 11, 8, 5, 5, 8, 11,
+    13, 11, 8, 5, 4, 6, 8, 10, 8, 6, 4, 3, 4, 5, 7, 5, 4, 3,
+];
 function clone1DArr(arr) {
     let new_ = [];
     for (let el of arr)
@@ -61,6 +69,8 @@ function clone1DArr(arr) {
 //43rd bit in the representation shows whose turn it is to go
 class Board {
     constructor() {
+        //Properties to quicken board evaluation
+        this.piece_eval = 0;
         //Bit in board is set to 0 if red, 1 if blue.
         //However, empty cells will also be 0. To account for this, we also have
         //a bitboard of all positions that have already been filled
@@ -83,6 +93,7 @@ class Board {
         board.board = this.board;
         board.set_positions = this.set_positions;
         board.avail_moves = clone1DArr(this.avail_moves);
+        board.piece_eval = this.piece_eval;
         return board;
     }
     set_ind(player, ind, column) {
@@ -96,6 +107,8 @@ class Board {
         if (this.avail_moves[column] >= exports.ROW_COUNT) {
             this.avail_moves[column] = exports.INVALID_MOVE;
         }
+        // console.log(ind, column, evalTable[Number(ind)], player);
+        this.piece_eval += evalTable[Number(ind)] * (player == 0 /* PLAYER.RED */ ? 1 : -1);
     }
     set_chip(player, row, column) {
         let ind = BigInt(column + row * exports.COL_COUNT);
@@ -129,44 +142,28 @@ class Board {
         this.board = state & ((1n << 43n) - 1n);
         this.set_positions = state >> 43n;
     }
-    board_str() {
+    board_str(red = "0", blue = "1", pipe = "|") {
         let output = "";
         for (let row = 0; row < 6; row += 1) {
             for (let col = 0; col < 7; col += 1) {
                 let set_bit = 1n << BigInt(col + (5 - row) * 7);
                 output +=
-                    "|" +
+                    pipe +
                         (this.set_positions & set_bit
                             ? (this.board & set_bit) == 0n
-                                ? "0"
-                                : "1"
+                                ? red
+                                : blue
                             : " ");
             }
-            output += "|\n";
+            output += pipe + "\n";
         }
         return output;
     }
     log_board() {
         console.log(this.board_str());
     }
+    log_board_color() {
+        console.log(this.board_str(safe_1.default.red("\u2022"), safe_1.default.blue("\u2022"), safe_1.default.yellow("|")));
+    }
 }
 exports.Board = Board;
-let b = new Board();
-b.set_chip(exports.RED, 0, 0);
-b.set_chip(exports.RED, 1, 0);
-b.set_chip(exports.RED, 2, 0);
-b.set_chip(exports.BLUE, 3, 0);
-b.set_chip(exports.RED, 4, 0);
-b.set_chip(exports.RED, 5, 0);
-b.set_chip(exports.BLUE, 0, 1);
-b.set_chip(exports.RED, 1, 1);
-b.set_chip(exports.BLUE, 0, 3);
-b.set_chip(exports.BLUE, 1, 3);
-b.set_chip(exports.BLUE, 2, 3);
-b.set_chip(exports.RED, 3, 3);
-b.set_chip(exports.BLUE, 4, 3);
-b.set_chip(exports.BLUE, 5, 3);
-b.set_chip(exports.BLUE, 0, 4);
-b.set_chip(exports.RED, 0, 5);
-b.set_chip(exports.RED, 0, 6);
-console.log(b.log_board(), b.win());

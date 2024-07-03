@@ -53,14 +53,15 @@ export class Game {
 
     positions += 1;
 
-    let score = 0;
-    for (let i = 0; i < COL_COUNT * ROW_COUNT; i += 1) {
-      let piece = position.piece_at_ind(BigInt(i));
-      if (piece == BLUE) score -= evalTable[i];
-      else if (piece == RED) score += evalTable[i];
-    }
-    return score;
-    return Math.random();
+    // let score = 0;
+    // for (let i = 0; i < COL_COUNT * ROW_COUNT; i += 1) {
+    //   let piece = position.piece_at_ind(BigInt(i));
+    //   if (piece == BLUE) score -= evalTable[i];
+    //   else if (piece == RED) score += evalTable[i];
+    // }
+    // console.log(score, position.piece_eval);
+    // return score;
+    return position.piece_eval;
   }
 
   //Negamax algorithm
@@ -182,7 +183,7 @@ export class Game {
 // m.set_board_state(554153860399167n);
 // // m.log_board();
 
-// let game = new Game();
+let game = new Game();
 // // game.board.set_board_state(
 // //   BigInt(parseInt("1111110000000000000000000000000000000000000111011", 2))
 // // );
@@ -190,36 +191,13 @@ export class Game {
 
 // console.log(game.bestMove(5));
 
-let game = new Game();
-game.board.set_chip(RED, 0, 0);
-game.board.set_chip(RED, 1, 0);
-game.board.set_chip(RED, 2, 0);
-game.board.set_chip(BLUE, 3, 0);
-game.board.set_chip(RED, 4, 0);
-
-game.board.set_chip(RED, 0, 1);
-// game.board.set_chip(RED, 1, 1);
-
-game.board.set_chip(BLUE, 0, 2);
-game.board.set_chip(BLUE, 1, 2);
-
-game.board.set_chip(BLUE, 0, 3);
-game.board.set_chip(BLUE, 1, 3);
-game.board.set_chip(BLUE, 2, 3);
-game.board.set_chip(RED, 3, 3);
-
-game.board.log_board();
-
-console.log(game.bestMove(7));
-console.log(-game.negamax(1, BLUE));
-
-// console.time();
-// let eval_ = game.negamax(14, BLUE);
-// console.timeEnd();
-// console.log(
-//   eval_,
-//   positions,
-//   Reflect.ownKeys(game.position_cache).length,
-//   a,
-//   d
-// );
+console.time();
+let eval_ = game.negamax(9, BLUE);
+console.timeEnd();
+console.log(
+  eval_,
+  positions,
+  Reflect.ownKeys(game.position_cache).length,
+  a,
+  d
+);
