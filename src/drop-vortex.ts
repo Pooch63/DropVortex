@@ -1,21 +1,24 @@
-import { write } from "./log";
+import * as log from "./log";
 import { Game } from "./game";
 import { start_game } from "./cli";
+import { ConsoleGameOptions } from "./options";
 
 new Game();
-write("");
-
-export class ConsoleGameOptions {
-  public depth?: number = 10;
-}
+// log.write("");
 
 export default class DropVortex {
   /**
    * Start a console game.
    */
-  start(options: ConsoleGameOptions) {
-    start_game(options.depth);
+  start(options: ConsoleGameOptions | Record<string, any>) {
+    let config =
+      options instanceof ConsoleGameOptions
+        ? options
+        : new ConsoleGameOptions(options);
+    start_game(config);
   }
 }
 
 new DropVortex().start({ depth: 9 });
+
+log.close();

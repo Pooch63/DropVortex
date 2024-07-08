@@ -23,7 +23,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.writeln = exports.write = void 0;
+exports.close = exports.writeln = exports.write = void 0;
 const fs = __importStar(require("fs"));
 let stream = fs.createWriteStream("./LOG", { flags: "w" });
 function write(value) {
@@ -34,3 +34,7 @@ function writeln(value) {
     stream.write(value + "\n");
 }
 exports.writeln = writeln;
+function close() {
+    stream.close();
+}
+exports.close = close;

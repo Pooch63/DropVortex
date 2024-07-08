@@ -1,0 +1,3 @@
+Potential Ways to Make MUCH Faster
+
+- In best move, we make each move and then evaluate them. In the evaluation function, because we do the same thing, maybe we could tweak it to simply return the best move for that player?

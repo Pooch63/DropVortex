@@ -8,3 +8,7 @@ export function write(value: string) {
 export function writeln(value: string) {
   stream.write(value + "\n");
 }
+
+export function close() {
+  stream.close();
+}

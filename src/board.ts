@@ -21,7 +21,7 @@ export const RED = PLAYER.RED,
   BLUE = PLAYER.BLUE,
   NO_PLAYER = PLAYER.NO_PLAYER;
 
-/** NOTE: if you update these values, you will also need to update the lane bitboard gen code.*/
+/** NOTE: if you want to update these values... DON'T. This engine is specifically built for 7x6 Connect 4.*/
 export const ROW_COUNT = 6,
   COL_COUNT = 7;
 const WIN_LENGTH = 4;
@@ -83,6 +83,10 @@ function clone1DArr<type>(arr: type[]) {
   return new_;
 }
 
+export function full_board_state(board: bigint, set_positions: bigint) {
+  return board | (set_positions << 43n);
+}
+
 //43rd bit in the representation shows whose turn it is to go
 export class Board {
   //Properties to quicken board evaluation
@@ -100,6 +104,13 @@ export class Board {
 
   constructor() {
     for (let i = 0; i < COL_COUNT; i += 1) this.avail_moves.push(0);
+  }
+
+  set_player_turn(player: PLAYER.RED | PLAYER.BLUE) {
+    this.board ^= BigInt(player) << 42n;
+  }
+  get_player_turn(): PLAYER.RED | PLAYER.BLUE {
+    return (this.board & player_turn_bit) == 1n ? PLAYER.BLUE : PLAYER.RED;
   }
 
   set_at_ind(ind: bigint): boolean {
@@ -161,8 +172,7 @@ export class Board {
   }
 
   full_board_state(): bigint {
-    return this.board | (this.set_positions << 43n);
-    // return this.board.toString() + this.set_positions.toString();
+    return full_board_state(this.board, this.set_positions);
   }
   set_board_state(state: bigint) {
     this.board = state & ((1n << 43n) - 1n);
@@ -198,3 +208,48 @@ export class Board {
     );
   }
 }
+
+let b = new Board();
+b.set_board_state(633318697599040n);
+
+console.log(b.piece_eval);
+
+b.log_board_color();
+
+let inverted_ind = full_board_state(
+  ~b.board & b.set_positions,
+  b.set_positions
+);
+let m = new Board();
+m.set_board_state(inverted_ind);
+m.log_board_color();
+
+//Bitboard of column in last positon of the connect4 board
+const col = BigInt(0b1_000000_1_000000_1_000000_1_000000_1_000000_1_000000);
+//Mirror bitboard on the y-axis
+export const player_turn_bit = 1n << 43n;
+//If the bitboard is the game board, also maintain the bit that says whose turn it is to move
+export function flip(bitboard: bigint, is_game_board: boolean) {
+  let val =
+    ((bitboard & (col >> 0n)) >> 6n) |
+    ((bitboard & (col >> 1n)) >> 4n) |
+    ((bitboard & (col >> 2n)) >> 2n) |
+    (bitboard & (col >> 3n)) |
+    ((bitboard & (col >> 4n)) << 2n) |
+    ((bitboard & (col >> 5n)) << 4n) |
+    ((bitboard & (col >> 6n)) << 6n);
+  if (is_game_board) val |= bitboard & player_turn_bit;
+  return val;
+}
+
+// let z = b.board;
+// let flipped_ = flip(z);
+
+// console.time();
+// for (let i = 0; i < 1_000_000; i += 1) flip(z);
+// console.timeEnd();
+
+// let k = new Board();
+// k.board = flipped_;
+// k.set_positions = flip(b.set_positions);
+// k.log_board_color();
