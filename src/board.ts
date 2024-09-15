@@ -32,44 +32,129 @@ export type column = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 //on the lane bitboard is of the same player, that player wins
 const lane_bitboards: bigint[] = [];
 
+let potential_lane_bitboards: {
+  match: bigint;
+  empty_bit: bigint;
+  row: row;
+  col: column;
+}[] = [];
+
 //Get row lanes
 let rows_bits = BigInt(0b1111);
-
 for (let row = 0; row < ROW_COUNT; row += 1) {
   for (let col = 0; col <= COL_COUNT - WIN_LENGTH; col += 1) {
-    lane_bitboards.push(rows_bits << BigInt(col + row * COL_COUNT));
+    let shift = BigInt(col + row * COL_COUNT);
+    let lane = rows_bits << shift;
+    lane_bitboards.push(lane);
+
+    for (let i = 0n; i < 4n; i += 1n) {
+      potential_lane_bitboards.push({
+        col: (col + Number(i)) as column,
+        row: row as row,
+        match: lane ^ (1n << (shift + i)),
+        empty_bit: 1n << (shift + i),
+      });
+    }
   }
 }
+
 //Get column lanes
 let col_bits = BigInt(0b1000000100000010000001);
-//Basically, no matter what, the number of columns is equal to the number of squares - win length - 1
 for (
   let offset = 0n;
-  offset < ROW_COUNT * COL_COUNT - WIN_LENGTH;
+  offset < (ROW_COUNT - WIN_LENGTH + 1) * COL_COUNT;
   offset += 1n
 ) {
-  lane_bitboards.push(col_bits << offset);
+  let lane = col_bits << offset;
+  lane_bitboards.push(lane);
+
+  let offset_col = offset / 7n;
+  let offset_row = Number(offset) - Number(offset_col) * 7;
+
+  for (let i = 0n; i < 4n; i += 1n) {
+    let shift = 7n * i;
+    potential_lane_bitboards.push({
+      row: Number(offset_col + i) as row,
+      col: offset_row as column,
+      match: lane ^ (1n << (offset + shift)),
+      empty_bit: 1n << (offset + shift),
+    });
+  }
 }
+
 //And, finally, the diagonals. These are a bit more annoying to implement.
 for (let row = ROW_COUNT - 1; row >= WIN_LENGTH - 1; row -= 1) {
   for (let set_bit_x = WIN_LENGTH - 1; set_bit_x < COL_COUNT; set_bit_x += 1) {
     let board: bigint = 0n;
     let mirrored_board: bigint = 0n;
+
+    let potential_lanes = [];
+    let mirrored_potential_lanes = [];
+    for (let i = 0; i < WIN_LENGTH; i += 1) {
+      potential_lanes.push({
+        match: 0n,
+        empty: 0n,
+        col: 0,
+        row: 0,
+      });
+      mirrored_potential_lanes.push({
+        match: 0n,
+        empty: 0n,
+        col: 0,
+        row: 0,
+      });
+    }
+
     for (let under_row = 0; under_row < WIN_LENGTH; under_row += 1) {
-      board |=
+      let bit =
         (1n << BigInt(set_bit_x - under_row)) <<
         BigInt(COL_COUNT * (row - under_row));
-      mirrored_board |=
+      let mirrored_bit =
         (1n << BigInt(COL_COUNT - (set_bit_x - under_row) - 1)) <<
         BigInt(COL_COUNT * (row - under_row));
+
+      board |= bit;
+      mirrored_board |= mirrored_bit;
+
+      for (let i = 0; i < WIN_LENGTH; i += 1) {
+        if (under_row == i) {
+          potential_lanes[i].empty = bit;
+          mirrored_potential_lanes[i].empty = mirrored_bit;
+
+          potential_lanes[i].col = set_bit_x - under_row;
+          mirrored_potential_lanes[i].col =
+            COL_COUNT - (set_bit_x - under_row) - 1;
+
+          potential_lanes[i].row = mirrored_potential_lanes[i].row =
+            row - under_row;
+          continue;
+        }
+        potential_lanes[i].match |= bit;
+        mirrored_potential_lanes[i].match |= mirrored_bit;
+      }
     }
     lane_bitboards.push(board);
     lane_bitboards.push(mirrored_board);
+
+    for (let i = 0; i < WIN_LENGTH; i += 1) {
+      potential_lane_bitboards.push(
+        ...potential_lanes,
+        ...mirrored_potential_lanes
+      );
+    }
   }
 }
 
+log_board(1n);
+let ind = Math.floor(Math.random() * potential_lane_bitboards.length);
+log_board(potential_lane_bitboards[ind].match);
+console.log(potential_lane_bitboards[ind]);
+console.log(potential_lane_bitboards.length);
+
 //SHOULD BE 86 for a 7x6 board with a win length of 4
 // console.log(lane_bitboards.length);
+
+const BIGINT_RED = BigInt(PLAYER.RED);
 
 export const INVALID_MOVE = -1;
 const evalTable = [
@@ -111,6 +196,11 @@ export class Board {
   }
   get_player_turn(): PLAYER.RED | PLAYER.BLUE {
     return (this.board & player_turn_bit) == 1n ? PLAYER.BLUE : PLAYER.RED;
+  }
+  get_chip(row: row, col: column): PLAYER {
+    let bit = 1n << BigInt(col + row * COL_COUNT);
+    if ((this.set_positions & bit) == 0n) return NO_PLAYER;
+    return (this.board & bit) == 0n ? PLAYER.RED : PLAYER.BLUE;
   }
 
   set_at_ind(ind: bigint): boolean {
@@ -169,6 +259,81 @@ export class Board {
       if (result == 0n || result == lane) return result == 0n ? 0 : 1;
     }
     return PLAYER.NO_PLAYER;
+  }
+  //Difference between # of lanes red has and blue has
+  lane_difference() {
+    let diff = 0;
+    for (let lane of potential_lane_bitboards) {
+      if (
+        //Not all cells in the lane are filled
+        (this.set_positions & lane.match) != lane.match ||
+        //It's already set
+        this.get_chip(lane.row, lane.col) != NO_PLAYER
+      )
+        continue;
+
+      let result = this.board & lane.match;
+
+      //All bits are zero: All slots are that of one player
+      //ALL bits are equal to the bitboard: ALL slots are set to 1, the other player had a lane
+      if (result == 0n || result == lane.match) {
+        diff += result == BIGINT_RED ? 1 : -1;
+      }
+    }
+    return diff;
+  }
+
+  // lane_info(): { win: PLAYER.RED | PLAYER.BLUE } | { difference: number } {
+  //   let diff = 0;
+  //   for (let lane of potential_lane_bitboards) {
+  //     //Not all cells in the lane are filled
+  //     if ((this.set_positions & lane.match) != lane.match) continue;
+
+  //     //It's already set
+  //     if (this.get_chip(lane.row, lane.col) != NO_PLAYER) continue;
+
+  //     let result = this.board & lane.match;
+
+  //     //All bits are zero: All slots are that of one player
+  //     //ALL bits are equal to the bitboard: ALL slots are set to 1, the other player had a lane
+  //     if (result == 0n || result == lane.match) {
+  //       diff += result == BIGINT_RED ? 1 : -1;
+  //     }
+  //   }
+  //   return diff;
+  // }
+
+  //Does a certain player have an available win?
+  available_win(player: PLAYER.RED | PLAYER.BLUE): boolean {
+    for (let lane of potential_lane_bitboards) {
+      //Not all cells in the lane are filled
+      if ((this.set_positions & lane.match) != lane.match) continue;
+
+      let result = this.board & lane.match;
+
+      //If ALL the lane bits aren't set, then that person can't take the lane
+      //Very important note: In previous versions, I had made this line into two parts to make this code more readable:
+      /**
+       * if (
+          !(
+            (result == 0n && player != RED) ||
+            (result == lane.match && player != BLUE)
+          )
+          ) continue;
+          if (this.avail_moves[lane.col] == lane.row) return true;
+      */
+      //Once I removed the continue statement, evaluation speed was increased by 6 times (730ms to 120ms)
+      if (
+        !(
+          (result == 0n && player != RED) ||
+          (result == lane.match && player != BLUE)
+        ) &&
+        this.avail_moves[lane.col] == lane.row
+      ) {
+        return true;
+      }
+    }
+    return false;
   }
 
   full_board_state(): bigint {

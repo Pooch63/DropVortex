@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "npx tsc",
-    "test": "node .\\src\\drop-vortex.js"
+    "test": "node .\\lib\\drop-vortex.js"
   },
   "dependencies": {
     "colors": "^1.4.0",

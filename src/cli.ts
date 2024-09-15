@@ -15,11 +15,17 @@ import prompt_ from "prompt-sync";
 const prompt = prompt_();
 
 export function start_game(options: ConsoleGameOptions) {
-  let { depth, bot_first, time_evaluation } = options;
+  let { move_time, fixed_depth: depth, bot_first, time_evaluation } = options;
   let game = new Game();
 
   let boards = [];
-  console.log(`You are playing against the computer at depth = ${depth}`);
+  if (options.fixed_depth != undefined) {
+    console.log(`You are playing against the computer at depth = ${depth}`);
+  } else if (options.move_time != undefined) {
+    console.log(
+      `You are playing against the bot. It has ${options.move_time}ms to think.`
+    );
+  }
 
   enum Turn {
     BOT,
@@ -56,7 +62,9 @@ export function start_game(options: ConsoleGameOptions) {
       let time_taken: number = 0;
       let start = Date.now();
       let best: { col: number; row: number } =
-        game.best_move_fixed_depth(depth);
+        options.fixed_depth == undefined
+          ? game.best_move(options.move_time, RED)
+          : game.best_move_fixed_depth(depth, RED);
       time_taken = Date.now() - start;
 
       game.board.set_chip(RED, best.row as row, best.col as column);
@@ -176,7 +184,7 @@ export function start_game(options: ConsoleGameOptions) {
       turn = Turn.BOT;
       return { processed: true, reprint: true };
     }
-    if (command_name) return { processed: false };
+    return { processed: false };
   }
 }
 
